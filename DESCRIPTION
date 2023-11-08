@@ -1,0 +1,13 @@
+Package: simsim
+Type: Package
+Title: spatial crop modeling
+Description: Functions to support the agwise workflows.
+Version: 0.0-1
+#Depends: 
+Suggests: DSSAT, Rwofost
+Date: 2023-11-17
+Encoding: UTF-8
+Authors@R: c(person("A", "B", role ="aut"), person("C", "D", role ="aut"), person("D", "E", role ="aut"), person("Robert J.", "Hijmans", role = c("cre", "aut"),  email = "r.hijmans@gmail.com"))
+Maintainer: Robert J. Hijmans <r.hijmans@gmail.com> 
+License: GPL (>=3)
+RoxygenNote: 7.2.3
