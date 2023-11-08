@@ -1,5 +1,5 @@
 
 .onAttach <- function(libname, pkgname) {
-	packageStartupMessage("agvise ", utils::packageVersion("agvise"))
+	packageStartupMessage("simsim ", utils::packageVersion("simsim"))
 }
 
