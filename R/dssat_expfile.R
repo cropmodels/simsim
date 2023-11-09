@@ -1,32 +1,25 @@
 
-create_filex <-function(file_x, i, path.to.extdata) {
-    file_x$FIELDS$WSTA <- paste0("WHTE", formatC(width = 4, as.integer(i), flag = "0"))
-    file_x$FIELDS$ID_SOIL <- paste0('TRAN', formatC(width = 5, as.integer(i), flag = "0"))
-	DSSAT::write_filex(file_x)
-} 
 
-
-
-crop = "Soybean"; filex="ESAD8501.SBX"; planting="2022-10-15"; harvest="2022-05-15"; plantingWindow=7; ingenoid="IB0058"; path ="d:/agwise/dssat/"
+#crop = "Soybean"; filex="ESAD8501.SBX"; planting="2022-10-15"; harvest="2022-05-15"; plantingWindow=7; ingenoid="IB0058"; path ="d:/agwise/dssat/"
 
 # Create multiple experimental files
-dssat.expfile <- function(crop, filex, planting, harvesting, plantingWindow=1, ingenoid, 
-		path) {
+dssat.expfile <- function(crop, filex, planting, harvesting, plantingWindow=1, ingenoid, path) {
 		#	path <- "d:/agwise/dssat/"
 
-	fgps = file.path(path, "input/AOI_GPS.rds")
+
+#	fgps = file.path(path, "input/AOI_GPS.rds")
+#	countryCoord <- readRDS(fgps)
+#	countryCoord <- unique(countryCoord[, c("lon", "lat")])
+#	countryCoord <- countryCoord[stats::complete.cases(countryCoord), ]		
+
+#	fsoil <- paste(path, "input/SoilDEM_PointData_AOI_profile.RDS", sep="")  
+#	Soil <- readRDS(fsoil)
+#	names(Soil)[names(Soil)=="lat"] <- "latitude"
+#	names(Soil)[names(Soil)=="lon"] <- "longitude"
+#	Soil <- na.omit(Soil)
+
 	frain = file.path(path, paste0("input/Rainfall_Season_1_PointData_AOI.RDS"))
-	fsoil <- paste(path, "input/SoilDEM_PointData_AOI_profile.RDS", sep="")  
-
-	countryCoord <- readRDS(fgps)
-	countryCoord <- unique(countryCoord[, c("lon", "lat")])
-	countryCoord <- countryCoord[stats::complete.cases(countryCoord), ]		
-
 	Rainfall <- readRDS(frain)
-	Soil <- readRDS(fsoil)
-	names(Soil)[names(Soil)=="lat"] <- "latitude"
-	names(Soil)[names(Soil)=="lon"] <- "longitude"
-	Soil <- na.omit(Soil)
 
 	path.to.extdata <- file.path(path, "transform")
 	path.to.temdata <- file.path(path, "landing")
@@ -53,15 +46,17 @@ dssat.expfile <- function(crop, filex, planting, harvesting, plantingWindow=1, i
 	## if multiple planting dates are to be tested, adjust the Harvest_month_date to extract weather data for the later planting dates.	
 	ending <- harvest + 7 * (plantingWindow-1)
 		
-	countryCoord <- countryCoord[stats::complete.cases(countryCoord), ]
-	names(countryCoord) <- c("longitude", "latitude")
+#	countryCoord <- countryCoord[stats::complete.cases(countryCoord), ]
+#	names(countryCoord) <- c("longitude", "latitude")
 
-	metaDataWeather <- as.data.frame(Rainfall[,1:7])
-	metaData_Soil <- Soil[,c("longitude", "latitude", "NAME_1", "NAME_2")]
-	metaData <- merge(metaDataWeather,metaData_Soil)
-	metaData <- unique(metaData[,1:4])
-	coords <- merge(metaData, countryCoord)
-	grid <- as.matrix(coords)
+#	metaDataWeather <- as.data.frame(Rainfall[,1:7])
+#	metaData_Soil <- Soil[,c("longitude", "latitude", "NAME_1", "NAME_2")]
+#	metaData <- merge(metaDataWeather,metaData_Soil)
+#	metaData <- unique(metaData[,1:4])
+#	coords <- merge(metaData, countryCoord)
+#	grid <- as.matrix(coords)
+
+	coords <- unique(Rainfall[, c("ID", "longitude", "latitude")])
 	
 	sy <- meteor::fromDate(starting, "year")
 	ey <- meteor::fromDate(ending, "year")
@@ -82,37 +77,29 @@ dssat.expfile <- function(crop, filex, planting, harvesting, plantingWindow=1, i
 
 	np <- rep(1, plantingWindow)
 	j  <- 1:plantingWindow
-	win <- j * 7	
-	file_x$`INITIAL CONDITIONS` <- file_x$`INITIAL CONDITIONS`[np, ]
-	file_x$`INITIAL CONDITIONS`$C <- j 
-	
-	file_x$`PLANTING DETAILS` <- file_x$`PLANTING DETAILS`[np,]
-	file_x$`PLANTING DETAILS`$P <- j
-		
-	file_x$`HARVEST DETAILS` <- file_x$`HARVEST DETAILS`[np,]
-	file_x$`HARVEST DETAILS`$H <- j
-			
-	file_x$`SIMULATION CONTROLS`<- file_x$`SIMULATION CONTROLS`[np,] 
-	file_x$`SIMULATION CONTROLS`$N <- j
+	win <- (j-1) * 7	
+	for (v in c("INITIAL CONDITIONS", "PLANTING DETAILS", "HARVEST DETAILS", "SIMULATION CONTROLS", "TREATMENTS")) {
+		file_x[[v]] <- file_x[[v]][np, ]
+		file_x[[v]][,1] <- j 
+	}
+	file_x$`INITIAL CONDITIONS`$ICDAT <- starting + win
+	file_x$`SIMULATION CONTROLS`$SDATE <- starting + win
+	file_x$`PLANTING DETAILS`$PDATE <- planting + win
+	file_x$`HARVEST DETAILS`$HDATE <- harvest + win
 
-	file_x$TREATMENTS <- file_x$TREATMENTS[np, ]
-	file_x$TREATMENTS$N <- j
 	file_x$TREATMENTS$TNAME <- paste0("Planting + ", win ,"days")
 	file_x$TREATMENTS$IC <- j
 	file_x$TREATMENTS$MP <- j
 	file_x$TREATMENTS$MH <- j
 	file_x$TREATMENTS$SM <- j
 
-	file_x$`HARVEST DETAILS`$HDATE <- as.Date(harvest) + win
-	file_x$`PLANTING DETAILS`$PDATE <- as.Date(planting) + win
-	file_x$`INITIAL CONDITIONS`$ICDAT <- as.Date(starting) + win
-	file_x$`SIMULATION CONTROLS`$SDATE <- as.Date(starting) + win
-	fout <- file.path(path.to.extdata, 
+
+	for (i in 1:nrow(coords)) {
+		file_x$FIELDS$WSTA <- paste0("WHTE", formatC(width = 4, as.integer(i), flag = "0"))
+		file_x$FIELDS$ID_SOIL <- paste0('TRAN', formatC(width = 5, as.integer(i), flag = "0"))
+		fout <- file.path(path.to.extdata, 
 			paste0('EXTE', formatC(width = 4, as.integer((i)), flag = "0"),'.',cropid,'X'))
-
-
-	for (i in seq_along(grid[,1])) {
-		create_filex(file_x, i, fout)
+		DSSAT::write_filex(file_x, fout)
 	}
 
 }
